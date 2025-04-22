@@ -1,5 +1,5 @@
-// Check browser support
-document.addEventListener('DOMContentLoaded', function() {
+ // Check browser support
+ document.addEventListener('DOMContentLoaded', function() {
   if (!window.showDirectoryPicker) {
     document.getElementById('browser-warning').style.display = 'block';
   }

@@ -2,7 +2,7 @@
 
 A browser-based disk space analyzer.
 
-Available at : `https://codehopperreddit.github.io/WebFileTree`
+Available at : https://codehopperreddit.github.io/WebFileTree
 
 ## Features
 
