@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="WebFileTree - A browser-based disk space analyzer" />
+  <title>WebFileTree</title>
+  
+  <style>
+    :root {
+      --primary-color: #3b82f6;
+      --primary-hover: #2563eb;
+      --background: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-light: #6b7280;
+      --border-color: #e5e7eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      
+      /* File type colors - similar to WizTree */
+      --color-exe: #f87171;
+      --color-dll: #fb923c;
+      --color-sys: #fbbf24;
+      --color-dat: #a3e635;
+      --color-doc: #34d399;
+      --color-zip: #22d3ee;
+      --color-img: #818cf8;
+      --color-vid: #c084fc;
+      --color-aud: #f472b6;
+      --color-code: #e879f9;
+      --color-font: #94a3b8;
+      --color-other: #9ca3af;
+      
+      /* Folder colors */
+      --folder-color-1: #3b82f6;
+      --folder-color-2: #8b5cf6;
+      --folder-color-3: #ec4899;
+      --folder-color-4: #f97316;
+      --folder-color-5: #84cc16;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+        Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: var(--background);
+      color: var(--text-main);
+      line-height: 1.5;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    
+    .app-title {
+      display: flex;
+      align-items: center;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      margin-right: 0.5rem;
+    }
+    
+    .version {
+      font-size: 0.75rem;
+      background-color: var(--primary-color);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    h2 {
+      font-size: 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    p {
+      margin-bottom: 0.75rem;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.5rem 0.75rem;
+      background-color: var(--primary-color);
+      color: white;
+      border: none;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      text-decoration: none;
+    }
+    
+    .btn:hover {
+      background-color: var(--primary-hover);
+    }
+    
+    .btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background-color: white;
+      color: var(--text-main);
+      border: 1px solid var(--border-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: var(--background);
+    }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      padding: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .alert {
+      padding: 1rem;
+      border-radius: 0.375rem;
+      margin-bottom: 1rem;
+    }
+    
+    .alert-warning {
+      background-color: #fff7ed;
+      border: 1px solid #ffedd5;
+      color: #9a3412;
+    }
+    
+    .alert-danger {
+      background-color: #fef2f2;
+      border: 1px solid #fee2e2;
+      color: #b91c1c;
+    }
+    
+    .progress-container {
+      margin-bottom: 1rem;
+    }
+    
+    .progress-bar {
+      height: 0.5rem;
+      background-color: #e5e7eb;
+      border-radius: 0.25rem;
+      overflow: hidden;
+    }
+    
+    .progress-bar-fill {
+      height: 100%;
+      background-color: var(--primary-color);
+      transition: width 0.3s ease;
+    }
+    
+    .progress-status {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+    
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .toolbar-section {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    
+    .search-box {
+      display: flex;
+      align-items: center;
+      background-color: white;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      padding: 0.25rem 0.5rem;
+    }
+    
+    .search-box input {
+      border: none;
+      outline: none;
+      font-size: 0.875rem;
+      width: 200px;
+    }
+    
+    .select-box {
+      padding: 0.25rem 0.5rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      background-color: white;
+      outline: none;
+    }
+    
+    .main-layout {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0.75rem;
+    }
+    
+    .treeview {
+      height: 400px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      background-color: white;
+    }
+    
+    .treeview-item {
+      display: flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .treeview-item:hover {
+      background-color: #f9fafb;
+    }
+    
+    .treeview-item.selected {
+      background-color: #e5edff;
+    }
+    
+    .treeview-indent {
+      display: inline-block;
+      width: 1rem;
+    }
+    
+    .treeview-toggle {
+      width: 1rem;
+      text-align: center;
+      cursor: pointer;
+    }
+    
+    .treeview-label {
+      margin-left: 0.25rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .content-area {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .status-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+    
+    .status-item {
+      background-color: white;
+      border-radius: 0.375rem;
+      padding: 0.5rem;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .status-label {
+      font-size: 0.75rem;
+      color: var(--text-light);
+      margin-bottom: 0.25rem;
+    }
+    
+    .status-value {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+    
+    .status-subvalue {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+    
+    .data-view {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .treemap-container {
+      height: 500px;
+      position: relative;
+      overflow: hidden;
+      background-color: #1e293b;
+      border-radius: 0.375rem;
+    }
+    
+    .treemap-node {
+      position: absolute;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.3);
+      box-sizing: border-box;
+      color: white;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .treemap-node:hover {
+      filter: brightness(1.1);
+      z-index: 10;
+      box-shadow: 0 0 0 2px white;
+    }
+    
+    .treemap-label {
+      padding: 0.25rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+    }
+    
+    .treemap-size {
+      font-size: 0.675rem;
+      opacity: 0.8;
+    }
+    
+    .file-list {
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      overflow: hidden;
+    }
+    
+    .file-list-header {
+      display: grid;
+      grid-template-columns: 30px 40% 100px 100px 80px 80px;
+      padding: 0.5rem;
+      background-color: #f9fafb;
+      border-bottom: 1px solid var(--border-color);
+      font-weight: 500;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .file-list-header div {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+    
+    .file-list-header div:hover {
+      color: var(--text-main);
+    }
+    
+    .file-list-content {
+      height: 300px;
+      overflow-y: auto;
+    }
+    
+    .file-list-item {
+      display: grid;
+      grid-template-columns: 30px 40% 100px 100px 80px 80px;
+      padding: 0.5rem;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-size: 0.875rem;
+    }
+    
+    .file-list-item:hover {
+      background-color: #f9fafb;
+    }
+    
+    .file-list-item:last-child {
+      border-bottom: none;
+    }
+    
+    .file-list-item.selected {
+      background-color: #e5edff;
+    }
+    
+    .file-type-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      color: white;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    
+    .file-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .file-extension {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+    
+    .file-size, .file-count {
+      text-align: right;
+    }
+    
+    .file-percentage {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    .percentage-bar {
+      flex-grow: 1;
+      height: 0.375rem;
+      background-color: #e5e7eb;
+      border-radius: 0.25rem;
+      overflow: hidden;
+    }
+    
+    .percentage-bar-fill {
+      height: 100%;
+    }
+    
+    .path-display {
+      margin-bottom: 0.75rem;
+      padding: 0.5rem;
+      background-color: white;
+      border-radius: 0.375rem;
+      border: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      overflow-x: auto;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+    }
+    
+    .path-segment {
+      display: inline-block;
+      cursor: pointer;
+      padding: 0 0.25rem;
+    }
+    
+    .path-segment:hover {
+      text-decoration: underline;
+      color: var(--primary-color);
+    }
+    
+    .path-separator {
+      color: var(--text-light);
+      padding: 0 0.25rem;
+    }
+    
+    #browser-warning {
+      display: none;
+    }
+    
+    .help-container {
+      margin-bottom: 1rem;
+    }
+    
+    .help-content {
+      display: none;
+    }
+    
+    .help-content.visible {
+      display: block;
+    }
+    
+    .help-list {
+      padding-left: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .help-note {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background-color: #fffbeb;
+      border: 1px solid #fef3c7;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+    }
+    
+    .icon {
+      display: inline-block;
+      width: 1rem;
+      height: 1rem;
+    }
+    
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+    }
+    
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stats-item {
+      background-color: white;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stats-label {
+      font-size: 0.75rem;
+      color: var(--text-light);
+    }
+    
+    .stats-value {
+      font-weight: 600;
+    }
+    
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 0.75rem;
+    }
+    
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-size: 0.875rem;
+    }
+    
+    .tab.active {
+      border-bottom-color: var(--primary-color);
+      color: var(--primary-color);
+      font-weight: 500;
+    }
+    
+    @media (max-width: 1024px) {
+      .main-layout {
+        grid-template-columns: 1fr;
+      }
+      
+      .treeview {
+        height: 250px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .status-bar {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .file-list-header, .file-list-item {
+        grid-template-columns: 30px 40% 80px 80px;
+      }
+      
+      .file-count, .file-date {
+        display: none;
+      }
+    }
+    
+    @media (max-width: 640px) {
+      .treemap-container {
+        height: 300px;
+      }
+      
+      .file-list-header, .file-list-item {
+        grid-template-columns: 30px 50% 80px;
+      }
+      
+      .file-percentage {
+        display: none;
+      }
+      
+      .actions {
+        margin-top: 0.5rem;
+        width: 100%;
+        justify-content: center;
+      }
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #111827;
+        --card-bg: #1f2937;
+        --text-main: #f9fafb;
+        --text-light: #9ca3af;
+        --border-color: #374151;
+      }
+      
+      .btn-secondary {
+        background-color: #374151;
+        color: var(--text-main);
+        border-color: #4b5563;
+      }
+      
+      .btn-secondary:hover {
+        background-color: #4b5563;
+      }
+      
+      .search-box, .select-box {
+        background-color: #374151;
+        color: var(--text-main);
+        border-color: #4b5563;
+      }
+      
+      .search-box input {
+        background-color: transparent;
+        color: var(--text-main);
+      }
+      
+      .treeview, .path-display, .status-item, .stats-item {
+        background-color: #1f2937;
+        border-color: #374151;
+      }
+      
+      .treeview-item:hover {
+        background-color: #374151;
+      }
+      
+      .treeview-item.selected {
+        background-color: #3b4a63;
+      }
+      
+      .file-list-header {
+        background-color: #1f2937;
+        border-color: #374151;
+      }
+      
+      .file-list-item:hover {
+        background-color: #2d3748;
+      }
+      
+      .file-list-item.selected {
+        background-color: #3b4a63;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="app-title">
+        <h1>WebFileTree</h1>
+        <span class="version">v1.1.0</span>
+      </div>
+      
+      <div class="actions">
+        <button id="select-folder-btn" class="btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;">
+            <path d="M21 15V6a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v0"></path>
+            <path d="M2 15V8a2 2 0 0 1 2-2h3.9"></path>
+            <rect x="2" y="15" width="19" height="6" rx="2"></rect>
+          </svg>
+          Select Folder
+        </button>
+        
+        <button id="help-btn" class="btn btn-secondary">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          Help
+        </button>
+        
+        <a href="https://github.com/codehopperreddit/WebFileTree" target="_blank" class="btn btn-secondary">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 0.5rem;">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+          </svg>
+          GitHub
+        </a>
+      </div>
+    </header>
+    
+    <div id="browser-warning" class="alert alert-danger">
+      <strong>Browser Not Supported</strong>
+      <p>WebFileTree requires a browser that supports the File System Access API.</p>
+      <p>Please use Chrome, Edge, or Opera for the best experience.</p>
+    </div>
+    
+    <div id="help-container" class="help-container">
+      <div id="help-content" class="help-content card">
+        <h2>How to Use WebFileTree</h2>
+        <ol class="help-list">
+          <li>Click "Select Folder" to choose a directory to analyze</li>
+          <li>Grant permission when your browser requests access</li>
+          <li>Wait for the analysis to complete</li>
+          <li>Use the treemap visualization to see what's taking up space</li>
+          <li>Click on folders to navigate deeper into the directory structure</li>
+          <li>Use the table view to see detailed size information</li>
+        </ol>
+        <div class="help-note">
+          <strong>Note:</strong> This app requires a modern browser that supports the File System Access API (Chrome, Edge, or Opera).
+          All processing happens in your browser - no data is uploaded to any server.
+        </div>
+      </div>
+    </div>
+    
+    <div id="error-container"></div>
+    
+    <div id="progress-container" class="progress-container" style="display: none;">
+      <div class="progress-status">
+        <span id="progress-text">Analyzing folder...</span>
+        <span id="progress-percentage">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+      </div>
+    </div>
+    
+    <div id="result-container" style="display: none;">
+      <div id="path-display" class="path-display"></div>
+      
+      <div class="status-bar">
+        <div class="status-item">
+          <div class="status-label">Total Space</div>
+          <div class="status-value" id="total-space">0 GB</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">Space Used</div>
+          <div class="status-value" id="space-used">0 GB</div>
+          <div class="status-subvalue" id="space-used-pct">(0%)</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">Space Free</div>
+          <div class="status-value" id="space-free">0 GB</div>
+          <div class="status-subvalue" id="space-free-pct">(0%)</div>
+        </div>
+        <div class="status-item">
+          <div class="status-label">Files Scanned</div>
+          <div class="status-value" id="files-scanned">0</div>
+        </div>
+      </div>
+      
+      <div class="toolbar">
+        <div class="toolbar-section">
+          <div class="search-box">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="search-input" placeholder="Search files..." />
+          </div>
+          
+          <select id="filter-type" class="select-box">
+            <option value="all">All Files</option>
+            <option value="large">Large Files</option>
+            <option value="directory">Folders Only</option>
+            <option value="image">Images</option>
+            <option value="video">Videos</option>
+            <option value="audio">Audio</option>
+            <option value="document">Documents</option>
+            <option value="archive">Archives</option>
+            <option value="executable">Executables</option>
+          </select>
+        </div>
+        
+        <div class="toolbar-section">
+          <select id="sort-by" class="select-box">
+            <option value="size-desc">Size (Largest First)</option>
+            <option value="size-asc">Size (Smallest First)</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="type-asc">Type (A-Z)</option>
+          </select>
+          
+          <button id="refresh-btn" class="btn btn-secondary" title="Refresh">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"></path>
+              <path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="tabs">
+        <div class="tab active" data-tab="treemap">Treemap</div>
+        <div class="tab" data-tab="details">Details</div>
+        <div class="tab" data-tab="types">File Types</div>
+      </div>
+      
+      <div class="main-layout">
+        <div class="treeview" id="directory-tree"></div>
+        
+        <div class="content-area">
+          <div class="data-view">
+            <div class="tab-content" id="treemap-tab" style="display: block;">
+              <div id="treemap-container" class="treemap-container"></div>
+            </div>
+            
+            <div class="tab-content" id="details-tab" style="display: none;">
+              <div class="stats-row">
+                <div class="stats-item">
+                  <div class="stats-label">Folders</div>
+                  <div class="stats-value" id="folder-count">0</div>
+                </div>
+                <div class="stats-item">
+                  <div class="stats-label">Files</div>
+                  <div class="stats-value" id="file-count">0</div>
+                </div>
+                <div class="stats-item">
+                  <div class="stats-label">Avg. File Size</div>
+                  <div class="stats-value" id="avg-file-size">0 KB</div>
+                </div>
+              </div>
+              
+              <h2 id="current-folder-name">File List</h2>
+              <div id="file-list" class="file-list">
+                <div class="file-list-header">
+                  <div></div>
+                  <div id="sort-name">Name</div>
+                  <div id="sort-size" class="file-size">Size</div>
+                  <div id="sort-percentage">% of Parent</div>
+                  <div id="sort-count" class="file-count">Items</div>
+                  <div id="sort-date" class="file-date">Modified</div>
+                </div>
+                <div id="file-list-content" class="file-list-content"></div>
+              </div>
+            </div>
+            
+            <div class="tab-content" id="types-tab" style="display: none;">
+              <div class="stats-row">
+                <div class="stats-item">
+                  <div class="stats-label">Total File Types</div>
+                  <div class="stats-value" id="file-types-count">0</div>
+                </div>
+                <div class="stats-item">
+                  <div class="stats-label">Largest Type</div>
+                  <div class="stats-value" id="largest-type">-</div>
+                </div>
+                <div class="stats-item">
+                  <div class="stats-label">Most Common</div>
+                  <div class="stats-value" id="most-common-type">-</div>
+                </div>
+              </div>
+              
+              <h2>File Types</h2>
+              <div id="file-types-list" class="file-list">
+                <div class="file-list-header">
+                  <div></div>
+                  <div>Extension</div>
+                  <div class="file-size">Size</div>
+                  <div>% of Total</div>
+                  <div class="file-count">Count</div>
+                  <div>File Type</div>
+                </div>
+                <div id="file-types-content" class="file-list-content"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/app.js"></script>
+</body>
+</html>
